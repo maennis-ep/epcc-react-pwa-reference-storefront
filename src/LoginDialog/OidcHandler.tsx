@@ -17,9 +17,13 @@ export const OidcHandler: React.FC<any> = ()=> {
             let query = new URLSearchParams(location.search);
             const code = query.get('code')
             const state = query.get('state')
-            
+
+
             if(code !== undefined && state !== undefined) {
                 if (state === localStorage.getItem('state')) {
+
+                    const codeVerifier = localStorage.getItem('code_verifier');
+
                     const response: any = await oidcLogin(code!, generateRedirectUri())
                     const result = response;
                     
