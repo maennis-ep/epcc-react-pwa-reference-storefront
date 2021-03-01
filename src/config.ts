@@ -1,6 +1,7 @@
 
 export const config = {
-  clientId: process.env.REACT_APP_CLIENT_ID || 'PvkeyEKaMppVoUZSddCFZt8pGuRxgD8YR7xW5HmKgQ',
+  clientId: process.env.REACT_APP_CLIENT_ID || 'CLIENT_ID',
+  clientSecret: 'CLIENT_SECRET',
   stripeKey: process.env.REACT_APP_STRIPE_KEY || 'pk_test_YknKfRnn0FyonEJnRe4RClIp00k5zLjbOG',
   categoryPageSize: 8,
   maxCompareProducts: 4,
@@ -23,5 +24,5 @@ export const config = {
     }
   ],
   defaultLanguage: process.env.REACT_APP_DEFAULT_LANGUAGE || "en",
-  defaultCurrency: process.env.REACT_APP_DEFAULT_CURRENCY || "USD",
+  defaultCurrency: process.env.REACT_APP_DEFAULT_CURRENCY || "GBP",
 };

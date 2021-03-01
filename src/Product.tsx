@@ -11,6 +11,7 @@ import {
   useCartData,
   useMultiCartData,
   useCustomerData,
+  useCatalog,
 } from "./app-state";
 import { isProductAvailable } from './helper';
 import { Availability } from './Availability';
@@ -22,6 +23,8 @@ import { ReactComponent as CaretIcon } from './images/icons/ic_caret.svg';
 import { APIErrorContext } from './APIErrorProvider';
 
 import './Product.scss';
+
+import imagePlaceHolder from './images/img_missing_horizontal@2x.png'
 
 
 interface ProductParams {
@@ -36,6 +39,7 @@ export const Product: React.FC = () => {
   const { updateCartItems, setCartQuantity, handleShowCartPopup } = useCartData();
   const { isLoggedIn } = useCustomerData();
   const { multiCartData, updateCartData, updateSelectedCart, setIsCartSelected } = useMultiCartData();
+  const { catalogId, releaseId } = useCatalog();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -53,12 +57,12 @@ export const Product: React.FC = () => {
   const [product] = useResolve(
     async () => {
       try {
-        return loadProductBySlug(productSlug, selectedLanguage, selectedCurrency)
+        return catalogId !== '' && releaseId !== '' && productSlug !== '' && loadProductBySlug(catalogId, releaseId, productSlug, selectedLanguage, selectedCurrency)
       } catch (error) {
         addError(error.errors);
       }
     },
-    [productSlug, selectedLanguage, selectedCurrency, addError]
+    [catalogId, releaseId, productSlug, selectedLanguage, selectedCurrency, addError]
   );
   const [productId, setProductId] = useState('');
 
@@ -70,15 +74,15 @@ export const Product: React.FC = () => {
     document.body.style.overflow = modalOpen ? 'hidden' : 'unset';
   }, [modalOpen])
 
-  const productImageHrefs = useProductImages(product);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const isPrevImageVisible = currentImageIndex > 0;
-  const isNextImageVisible = currentImageIndex < (productImageHrefs?.length ?? 0) - 1;
-  const productBackground = product?.background_color ?? '';
+  // const productImageHrefs = useProductImages(product);
+  // const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // const isPrevImageVisible = currentImageIndex > 0;
+  // const isNextImageVisible = currentImageIndex < (productImageHrefs?.length ?? 0) - 1;
+  // const productBackground = product?.background_color ?? '';
 
-  const handlePrevImageClicked = () => {
-    setCurrentImageIndex(currentImageIndex - 1);
-  };
+  // const handlePrevImageClicked = () => {
+  //   setCurrentImageIndex(currentImageIndex - 1);
+  // };
 
   const handleAddToCart = (cartId?: string) => {
     const currentCart = localStorage.getItem("mcart") || "";
@@ -91,8 +95,10 @@ export const Product: React.FC = () => {
         } else {
           updateCartItems();
         }
-        if (isLoggedIn) setIsCartSelected(true);
-        updateCartData();
+        if (isLoggedIn) {
+          setIsCartSelected(true);
+          updateCartData();
+        }
         setCartQuantity(1);
         handleShowCartPopup();
       }).finally(() => {
@@ -100,9 +106,9 @@ export const Product: React.FC = () => {
       })
   };
 
-  const handleNextImageClicked = () => {
-    setCurrentImageIndex(currentImageIndex + 1);
-  };
+  // const handleNextImageClicked = () => {
+  //   setCurrentImageIndex(currentImageIndex + 1);
+  // };
 
   const handleVariationChange = (childID: string) => {
     setProductId(childID);
@@ -129,6 +135,7 @@ export const Product: React.FC = () => {
             <button
               className="epbtn --primary product__addtocartbtn"
               onClick={handleAddToDefaultCart}
+              disabled={!(product.attributes.price && product.attributes.price[selectedCurrency])}
             >
               {t("add-to-cart")}
               {' - '}
@@ -136,7 +143,7 @@ export const Product: React.FC = () => {
             </button>
             <button onClick={() => setDropdownOpen(!dropdownOpen)} className={`epbtn --primary product__addtocartdropdowntoggle${
               dropdownOpen ? " --open" : ""
-            }`}>
+            }`} disabled={!(product.attributes.price && product.attributes.price[selectedCurrency])}>
               {addToCartLoading ? (
                 <SpinnerIcon className="product__addtocartdropdownicspinner" />
               ) : (
@@ -173,7 +180,7 @@ export const Product: React.FC = () => {
     }
 
     return (
-      <button className="epbtn --secondary" onClick={() => handleAddToCart()}>
+      <button className="epbtn --secondary" onClick={() => handleAddToCart()} disabled={!(product.attributes.price && product.attributes.price[selectedCurrency])}>
         {t("add-to-cart")}
       </button>
     );
@@ -196,7 +203,8 @@ export const Product: React.FC = () => {
       {product ? (
         <div className="product__maincontainer">
           <div className="product__imgcontainer">
-            {productImageHrefs.length > 0 && (
+            <img className="product__img" src={imagePlaceHolder} alt={product.attributes.name} />
+            {/* {productImageHrefs.length > 0 && (
               <>
                 <img className="product__img" src={productImageHrefs?.[currentImageIndex]} alt={product.name} style={{ backgroundColor: productBackground }} />
                 {isPrevImageVisible && (
@@ -210,22 +218,21 @@ export const Product: React.FC = () => {
                   </button>
                 )}
               </>
-            )}
+            )} */}
           </div>
           <div className="product__details">
             <h1 className="product__name">
-              {product.name}
+              {product.attributes.name}
             </h1>
             <div className="product__sku">
-              {product.sku}
+              {product.attributes.sku}
             </div>
             <div className="product__price">
-              {product.meta.display_price.without_tax.formatted}
-            </div>
-            <Availability available={isProductAvailable(product)} />
+            {product.attributes.price && product.attributes.price[selectedCurrency] && new Intl.NumberFormat(selectedLanguage, { style: 'currency', currency: selectedCurrency }).format(product.attributes.price[selectedCurrency].amount/100)}            </div>
+            {/* <Availability available={isProductAvailable(product)} />
             <div className="product__comparecheck">
               <CompareCheck product={product} />
-            </div>
+            </div> */}
             {
               product.meta.variations
                 ? <VariationsSelector product={product} onChange={handleVariationChange} />
@@ -237,10 +244,10 @@ export const Product: React.FC = () => {
               </div>
             </div>
             <div className="product__description">
-              {product.description}
+              {product.attributes.description}
             </div>
             <div className="product__socialshare">
-              <SocialShare name={product.name} description={product.description} imageHref={productImageHrefs?.[0]} />
+              <SocialShare name={product.attributes.name} description={product.attributes.description || ''} imageHref="" />
             </div>
           </div>
         </div>

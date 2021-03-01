@@ -24,20 +24,20 @@ export const NavMenu: React.FC<NavMenuProps> = (props) => {
     handleCategoryClick(category.id, category.name);
   };
 
-  function renderCategories(categories: moltin.Category[], level: number = 0, isVisible: boolean = false): React.ReactElement {
+  function renderCategories(categories: any={}, level: number = 0, isVisible: boolean = false): React.ReactElement {
     return (
       <ul className={`navmenu__sub --level-${level} ${isVisible ? '--show' : ''}`}>
-        {categories?.map(category => (
+        {categories?.data.map((category: any={}) => (
           <li key={category.id} className="navmenu__li">
               <Link
                 onClick={handleCloseMenu}
-                className={`navmenu__link ${category.children ? '--haschildren' : ''}`}
-                to={createCategoryUrl(category.slug)}
+                className={`navmenu__link ${category.relationships?.children?.data.length > 0 ? '--haschildren' : ''}`}
+                to={createCategoryUrl(category.id)}
               >
-                {category.name}
+                {category.attributes?.name}
               </Link>
-              <button type="button" className={`navmenu__nextbutton ${category.children ? '--haschildren' : ''}`} onClick={() => handleShow(category)} />
-            {category.children && renderCategories(category.children, level + 1, categoryHistory.includes(category.id))}
+              <button type="button" className={`navmenu__nextbutton ${category.relationships?.children?.data.length > 0 ? '--haschildren' : ''}`} onClick={() => handleShow(category)} />
+            {category.relationships?.children?.data.length > 0 && renderCategories(category.relationships?.children, level + 1, categoryHistory.includes(category.id))}
           </li>
         ))}
       </ul>

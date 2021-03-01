@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import * as moltin from '@moltin/sdk';
 import { loadCategoryProducts } from './service';
-import { useCategories, useTranslation, useCurrency } from './app-state';
+import { useCategories, useTranslation, useCurrency, useCatalog } from './app-state';
 import { ProductThumbnail } from './ProductThumbnail';
 import { createCategoryUrl } from './routes';
 import { Pagination } from './Pagination';
@@ -13,6 +13,7 @@ import './Category.scss';
 function useCategoryProducts(categoryId: string | undefined, pageNum: number) {
   const { selectedLanguage } = useTranslation();
   const { selectedCurrency } = useCurrency();
+  const { catalogId, releaseId } = useCatalog();
 
   const [totalPages, setTotalPages] = useState<number>();
 
@@ -24,25 +25,25 @@ function useCategoryProducts(categoryId: string | undefined, pageNum: number) {
   const [products] = useResolve(async () => {
     // during initial loading of categories categoryId might be undefined
     if (categoryId) {
-      const result = await loadCategoryProducts(categoryId, pageNum, selectedLanguage, selectedCurrency);
-      setTotalPages(result.meta.page.total);
+      const result = catalogId !== '' && releaseId !== '' && await loadCategoryProducts(catalogId, releaseId, categoryId, pageNum, selectedLanguage, selectedCurrency);
+      setTotalPages(1);
       return result;
     }
-  }, [categoryId, pageNum, selectedLanguage, selectedCurrency]);
+  }, [catalogId, releaseId, categoryId, pageNum, selectedLanguage, selectedCurrency]);
 
   return { products, totalPages };
 }
 
 interface CategoryParams {
-  categorySlug: string;
+  categoryId: string;
   pageNum?: string;
 }
 
 export const Category: React.FC = () => {
   const params = useParams<CategoryParams>();
-  const categorySlug = params.categorySlug;
-  const { categoryPathBySlug } = useCategories();
-  const categoryPath = categoryPathBySlug(categorySlug);
+  const categoryId = params.categoryId;
+  const { categoryPathById } = useCategories();
+  const categoryPath = categoryPathById(categoryId);
   const category = categoryPath?.[categoryPath?.length - 1];
   const parsedPageNum = parseInt(params.pageNum!);
   const pageNum = isNaN(parsedPageNum) ? 1 : parsedPageNum;
@@ -54,20 +55,20 @@ export const Category: React.FC = () => {
       {category && products ? (
         <>
           <div className="category__breadcrumbs">
-            {categoryPath?.map((category: moltin.Category, index: number) => (
+            {categoryPath?.map((category: moltin.Node, index: number) => (
               <React.Fragment key={category.id}>
                 {index > 0 && (
                   <span className="category__breadcrumbseparator">{'>'}</span>
                 )}
-                <a className="category__breadcrumblink" href={createCategoryUrl(category.slug)}>{category.name}</a>
+                <a className="category__breadcrumblink" href={createCategoryUrl(category.id || '')}>{category.attributes.name}</a>
               </React.Fragment>
             ))}
           </div>
 
-          <h1 className="category__categoryname">{category?.name ?? ' '}</h1>
+          <h1 className="category__categoryname">{category?.attributes.name ?? ' '}</h1>
 
           <ul className="category__productlist">
-            {products && products.data.map(product => (
+            {products && products.data.map((product: any) => (
               <li key={product.id} className="category__product">
                 <ProductThumbnail product={product} />
               </li>
@@ -78,8 +79,8 @@ export const Category: React.FC = () => {
             {totalPages && (
               <Pagination
                 totalPages={totalPages}
-                currentPage={products?.meta.page.current ?? pageNum}
-                formatUrl={(page) => createCategoryUrl(categorySlug, page)}
+                currentPage={pageNum}
+                formatUrl={(page) => createCategoryUrl(categoryId, page)}
               />
             )}
           </div>
