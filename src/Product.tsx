@@ -11,7 +11,6 @@ import {
   useCartData,
   useMultiCartData,
   useCustomerData,
-  useCatalog,
 } from "./app-state";
 import { isProductAvailable } from './helper';
 import { Availability } from './Availability';
@@ -37,9 +36,8 @@ export const Product: React.FC = () => {
   const { selectedLanguage } = useTranslation();
   const { selectedCurrency } = useCurrency();
   const { updateCartItems, setCartQuantity, handleShowCartPopup } = useCartData();
-  const { isLoggedIn } = useCustomerData();
+  const { isLoggedIn, token } = useCustomerData();
   const { multiCartData, updateCartData, updateSelectedCart, setIsCartSelected } = useMultiCartData();
-  const { catalogId, releaseId } = useCatalog();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -57,12 +55,12 @@ export const Product: React.FC = () => {
   const [product] = useResolve(
     async () => {
       try {
-        return catalogId !== '' && releaseId !== '' && productSlug !== '' && loadProductBySlug(catalogId, releaseId, productSlug, selectedLanguage, selectedCurrency)
+        return productSlug !== '' && loadProductBySlug(productSlug, selectedLanguage, selectedCurrency, token)
       } catch (error) {
         addError(error.errors);
       }
     },
-    [catalogId, releaseId, productSlug, selectedLanguage, selectedCurrency, addError]
+    [productSlug, selectedLanguage, selectedCurrency, addError, token]
   );
   const [productId, setProductId] = useState('');
 
